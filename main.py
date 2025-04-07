@@ -92,7 +92,7 @@ def main():
     st.title("Msone Dictionary")
     
     # Load the data
-    csv_path = os.path.join("/Users/raafid_mv/Downloads", "merged_data_inner_join.csv")
+    csv_path = os.path.join("", "merged_data_inner_join.csv")
     
     try:
         df = pd.read_csv(csv_path)
