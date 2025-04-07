@@ -7,15 +7,17 @@ def highlight_text(text, search_term):
     if pd.isna(text) or search_term == "":
         return text
     
-    # Case-insensitive search
-    pattern = re.compile(f'({re.escape(search_term)})', re.IGNORECASE)
+    # Case-insensitive search for whole word
+    pattern = re.compile(f'\\b({re.escape(search_term)})\\b', re.IGNORECASE)
     highlighted = pattern.sub(r'<span style="background-color: green; font-weight: bold">\1</span>', str(text))
     return highlighted
 
 def search_and_display(df, search_term):
     if search_term:
-        # Filter dataframe for rows containing the search term in "English Word" column
-        filtered_df = df[df["English Word"].str.contains(search_term, case=False, na=False)]
+        # Filter dataframe for rows containing the exact search term in "English Word" column
+        # Using word boundaries \b to match exact words
+        pattern = f'\\b{re.escape(search_term)}\\b'
+        filtered_df = df[df["English Word"].str.contains(pattern, case=False, na=False, regex=True)]
         
         if not filtered_df.empty:
             st.write(f"Found {len(filtered_df)} results for '{search_term}'")
@@ -26,14 +28,11 @@ def search_and_display(df, search_term):
             # Display the results with highlighted text
             for _, row in display_df.iterrows():
                 st.markdown("---")
-                st.markdown(f"**Source:** {row['column_1']} | **Section:** {row['column_2']} | **Attention Score:** {row['Hypothetical Attention Score']}")
-                # st.markdown(f"**Timestamp:** {row['column_3']}")
+                st.markdown(f"<span style='font-size:22px; color:white'><b>Source: {row['column_1']} | **Author:** </b>{row['column_2']}</span> | <span style='font-size:18px; color:violet'><b>Probability:</b> {row['Hypothetical Attention Score']}</span>", unsafe_allow_html=True)
                 
                 # Highlight search term in column_4 if it exists
                 highlighted_col4 = highlight_text(row['column_4'], search_term)
                 st.markdown(f"**English Subtitle:** {highlighted_col4}", unsafe_allow_html=True)
-                
-                # st.markdown(f"**Timestamp:** {row['column_5']}")
                 
                 # Highlight search term in column_6 if it exists
                 # Also highlight Malayalam Word in column_6 if it exists
@@ -44,12 +43,9 @@ def search_and_display(df, search_term):
                 st.markdown(f"**Malayalm Subtitle:** {highlighted_col6}", unsafe_allow_html=True)
                 
                 # No highlighting for English Word column
-                st.markdown(f"**English Word:** {row['English Word']} | **Malayalam Word:** {row['Malayalam Word']}")
+                st.markdown(f"**Malayalam Word:** {row['Malayalam Word']}")
                 
-                # st.markdown(f"**Malayalam Word:** {row['Malayalam Word']}")
-                # st.markdown(f"**Base Word:** {row['Base word']}")
                 st.markdown(f"<span style='font-size:24px; color:orange'><b>Base Word:</b> {row['Base word']}</span>", unsafe_allow_html=True)
-                # st.markdown(f"**Attention Score:** {row['Hypothetical Attention Score']}")
             
             # Display tabular results
             st.subheader("Results in Tabular Format")
@@ -93,10 +89,10 @@ def search_and_display(df, search_term):
             st.warning(f"No results found for '{search_term}'")
 
 def main():
-    st.title("English-Malayalam Translation Search")
+    st.title("Msone Dictionary")
     
     # Load the data
-    csv_path = os.path.join("", "merged_data_inner_join.csv")
+    csv_path = os.path.join("/Users/raafid_mv/Downloads", "merged_data_inner_join.csv")
     
     try:
         df = pd.read_csv(csv_path)
@@ -107,17 +103,12 @@ def main():
         # Display results when search term is provided
         if search_term:
             search_and_display(df, search_term)
-        else:
-            st.info("Enter a word in the search box to find translations")
-            
-        # Option to display the full dataset
-        if st.checkbox("Show full dataset"):
-            st.dataframe(df)
-            
+        
     except FileNotFoundError:
         st.error(f"Error: Could not find the file at {csv_path}. Please make sure the file exists in the specified directory.")
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
+
 
 if __name__ == "__main__":
     main()
