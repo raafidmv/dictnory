@@ -7,9 +7,13 @@ def highlight_text(text, search_term):
     if pd.isna(text) or search_term == "":
         return text
     
+    # Ensure text is a string
+    text = str(text)
+    search_term = str(search_term)
+    
     # Case-insensitive search for whole word
     pattern = re.compile(f'\\b({re.escape(search_term)})\\b', re.IGNORECASE)
-    highlighted = pattern.sub(r'<span style="background-color: green; font-weight: bold">\1</span>', str(text))
+    highlighted = pattern.sub(r'<span style="background-color: green; font-weight: bold">\1</span>', text)
     return highlighted
 
 def search_and_display(df, search_term):
@@ -17,7 +21,10 @@ def search_and_display(df, search_term):
         # Filter dataframe for rows containing the exact search term in "English Word" column
         # Using word boundaries \b to match exact words
         pattern = f'\\b{re.escape(search_term)}\\b'
-        filtered_df = df[df["English Word"].str.contains(pattern, case=False, na=False, regex=True)]
+        
+        # Make sure we're only applying regex filtering to string columns
+        mask = df["English Word"].astype(str).str.contains(pattern, case=False, na=False, regex=True)
+        filtered_df = df[mask]
         
         if not filtered_df.empty:
             st.write(f"Found {len(filtered_df)} results for '{search_term}'")
@@ -28,7 +35,7 @@ def search_and_display(df, search_term):
             # Display the results with highlighted text
             for _, row in display_df.iterrows():
                 st.markdown("---")
-                st.markdown(f"<span style='font-size:22px; color:white'><b>Source: {row['column_1']} | **Author:** </b>{row['column_2']}</span> | <span style='font-size:18px; color:violet'><b>Probability:</b> {row['Hypothetical Attention Score']}</span>", unsafe_allow_html=True)
+                st.markdown(f"<span style='font-size:22px; color:white'><b>Source: {str(row['column_1'])} | **Author:** </b>{str(row['column_2'])}</span> | <span style='font-size:18px; color:violet'><b>Probability:</b> {str(row['Hypothetical Attention Score'])}</span>", unsafe_allow_html=True)
                 
                 # Highlight search term in column_4 if it exists
                 highlighted_col4 = highlight_text(row['column_4'], search_term)
@@ -36,16 +43,16 @@ def search_and_display(df, search_term):
                 
                 # Highlight search term in column_6 if it exists
                 # Also highlight Malayalam Word in column_6 if it exists
-                highlighted_col6 = row['column_6']
-                if not pd.isna(highlighted_col6):
+                highlighted_col6 = str(row['column_6']) if not pd.isna(row['column_6']) else ""
+                if highlighted_col6:
                     highlighted_col6 = highlight_text(highlighted_col6, search_term)
-                    highlighted_col6 = highlight_text(highlighted_col6, row['Malayalam Word'])
+                    highlighted_col6 = highlight_text(highlighted_col6, str(row['Malayalam Word']))
                 st.markdown(f"**Malayalm Subtitle:** {highlighted_col6}", unsafe_allow_html=True)
                 
                 # No highlighting for English Word column
-                st.markdown(f"**Malayalam Word:** {row['Malayalam Word']}")
+                st.markdown(f"**Malayalam Word:** {str(row['Malayalam Word'])}")
                 
-                st.markdown(f"<span style='font-size:24px; color:orange'><b>Base Word:</b> {row['Base word']}</span>", unsafe_allow_html=True)
+                st.markdown(f"<span style='font-size:24px; color:orange'><b>Base Word:</b> {str(row['Base word'])}</span>", unsafe_allow_html=True)
             
             # Display tabular results
             st.subheader("Results in Tabular Format")
@@ -63,18 +70,22 @@ def search_and_display(df, search_term):
                 # Create a copy of the dataframe for HTML formatting
                 html_df = table_df.copy()
                 
+                # Convert all columns to string to prevent type errors
+                for col in html_df.columns:
+                    html_df[col] = html_df[col].astype(str)
+                
                 # Apply highlighting to column_4
                 html_df['column_4'] = html_df['column_4'].apply(
-                    lambda x: highlight_text(x, search_term) if not pd.isna(x) else x
+                    lambda x: highlight_text(x, search_term)
                 )
                 
                 # Apply highlighting to column_6
                 html_df['column_6'] = html_df.apply(
-                    lambda row: highlight_text(row['column_6'], search_term) if not pd.isna(row['column_6']) else row['column_6'], 
+                    lambda row: highlight_text(row['column_6'], search_term), 
                     axis=1
                 )
                 html_df['column_6'] = html_df.apply(
-                    lambda row: highlight_text(row['column_6'], row['Malayalam Word']) if not pd.isna(row['column_6']) else row['column_6'], 
+                    lambda row: highlight_text(row['column_6'], row['Malayalam Word']), 
                     axis=1
                 )
                 
@@ -92,7 +103,7 @@ def main():
     st.title("Msone Dictionary")
     
     # Load the data
-    csv_path = os.path.join("", "merged_data_inner_join.csv")
+    csv_path = os.path.join("/Users/raafid_mv/Downloads", "merged_data_inner_join.csv")
     
     try:
         df = pd.read_csv(csv_path)
