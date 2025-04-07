@@ -14,7 +14,7 @@ st.markdown("<h1 class='main-header'>English-Malayalam Dictionary</h1>", unsafe_
 # Load the data
 @st.cache_data
 def load_data():
-    df = pd.read_csv('/Users/raafid_mv/Downloads/merged_data_inner_join.csv')
+    df = pd.read_csv('merged_data_inner_join.csv')
     
     # Convert Hypothetical Attention Score to numeric
     df['Hypothetical Attention Score'] = pd.to_numeric(df['Hypothetical Attention Score'], errors='coerce')
